@@ -28,7 +28,6 @@ public class OrderController {
     private final Map<Long, Order> orderRepository = new ConcurrentHashMap<>();
     private final AtomicLong idCounter = new AtomicLong(1);
 
-    // Sử dụng tên dịch vụ logic đã đăng ký với Eureka (PRODUCT-SERVICE)
     private static final String PRODUCT_SERVICE_URL = "http://PRODUCT-SERVICE/api/v1/products/";
 
     @PostConstruct
@@ -59,17 +58,10 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
-    /**
-     * Tạo đơn hàng sử dụng RestTemplate được chú thích @LoadBalanced.
-     * URL chỉ cần dùng tên dịch vụ http://PRODUCT-SERVICE/api/v1/products/{id}.
-     * Spring Cloud LoadBalancer sẽ tự động phân phối luân phiên (Round-Robin)
-     * giữa Instance 1 (8082) và Instance 2 (8084).
-     */
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequestDTO request) {
         log.info(">>> [ORDER-SERVICE] Bắt đầu gọi PRODUCT-SERVICE qua URL cân bằng tải: {}{}", PRODUCT_SERVICE_URL, request.getProductId());
 
-        // 1. Gọi RestTemplate với service name logic
         ProductResponseDTO product = restTemplate.getForObject(PRODUCT_SERVICE_URL + request.getProductId(), ProductResponseDTO.class);
 
         if (product == null) {
@@ -78,7 +70,6 @@ public class OrderController {
 
         log.info(">>> [ORDER-SERVICE] Đã nhận phản hồi từ PRODUCT-SERVICE (Instance chạy ở Port: {})", product.getServerPort());
 
-        // 2. Tính toán tổng tiền
         BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
         Long newId = idCounter.getAndIncrement();
 
@@ -96,9 +87,6 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
-    /**
-     * Endpoint mô phỏng gửi N requests liên tiếp để kiểm chứng phân phối tải Round-Robin.
-     */
     @GetMapping("/test-load-balancing")
     public ResponseEntity<Map<String, Object>> testLoadBalancing(@RequestParam(defaultValue = "10") int count) {
         log.info(">>> Bắt đầu gửi {} requests kiểm tra Client-Side Load Balancing...", count);

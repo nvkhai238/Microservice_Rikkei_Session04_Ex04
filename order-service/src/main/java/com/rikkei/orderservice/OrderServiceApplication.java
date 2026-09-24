@@ -15,11 +15,6 @@ public class OrderServiceApplication {
         SpringApplication.run(OrderServiceApplication.class, args);
     }
 
-    /**
-     * Bean RestTemplate được đính kèm annotation @LoadBalanced.
-     * Cho phép sử dụng logical service name (ví dụ: http://PRODUCT-SERVICE/...)
-     * và tự động phân phối tải theo giải thuật Round-Robin qua các instance của service.
-     */
     @Bean
     @LoadBalanced
     public RestTemplate restTemplate() {
